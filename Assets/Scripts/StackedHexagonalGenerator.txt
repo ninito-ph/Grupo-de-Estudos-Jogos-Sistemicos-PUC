@@ -1,0 +1,112 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class StackedHexagonalGenerator : MonoBehaviour
+{
+    #region Field Declarations
+    public Material mat;
+
+    MeshFilter filter;
+    VoxelEngine.MeshBuilder builder;
+    #endregion
+    
+    #region Unity Callbacks
+    void Start()
+    {
+        for(int cx = 0; cx < 4; cx ++)
+        {
+            for(int cz = 0; cz < 4; cz ++)
+            {
+                GameObject empty = new GameObject();
+                empty.transform.position = new Vector3(cx * VoxelEngine.HexagonHelper.SIZE_X * 16,0,cz * VoxelEngine.HexagonHelper.SIZE_Z * 4 * 2);
+                filter = empty.AddComponent<MeshFilter>();
+                empty.AddComponent<MeshRenderer>().material = mat;
+
+                builder = new VoxelEngine.MeshBuilder(256000);
+
+                for(int bx = 0; bx < 16; bx ++)
+                {
+                    for(int bz = 0; bz < 4; bz ++)
+                    {
+                        #region Current Hex
+
+                        float x = cx * VoxelEngine.HexagonHelper.SIZE_X * 16 + (bx * VoxelEngine.HexagonHelper.SIZE_X);
+                        float z = cz * VoxelEngine.HexagonHelper.SIZE_Z * 4 * 2 + (VoxelEngine.HexagonHelper.SIZE_Z * ((bz) * 2 + bx%2));
+
+                        float ch = VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x,z));
+                    
+                        #endregion
+                        #region Check Neighbour Hex
+
+                        float off = 0.866025f * 2; //Used to retrieve adjascent level 
+
+                        float[] h = {
+                            ch - VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x + Mathf.Sin(Mathf.PI/180 * 30) * off,z + Mathf.Cos(Mathf.PI/180 * 30) * off)),
+                            ch - VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x + Mathf.Sin(Mathf.PI/180 * 90) * off,z + Mathf.Cos(Mathf.PI/180 * 90) * off)),
+                            ch - VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x + Mathf.Sin(Mathf.PI/180 * 150) * off,z + Mathf.Cos(Mathf.PI/180 * 150) * off)),
+                            ch - VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x + Mathf.Sin(Mathf.PI/180 * 210) * off,z + Mathf.Cos(Mathf.PI/180 * 210) * off)),
+                            ch - VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x + Mathf.Sin(Mathf.PI/180 * 270) * off,z + Mathf.Cos(Mathf.PI/180 * 270) * off)),
+                            ch - VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x + Mathf.Sin(Mathf.PI/180 * 330) * off,z + Mathf.Cos(Mathf.PI/180 * 330) * off))
+                        };
+                        builder.AddStackedHexagon((bx * VoxelEngine.HexagonHelper.SIZE_X),0,(VoxelEngine.HexagonHelper.SIZE_Z * ((bz) * 2 + bx%2)),ch,h,
+                        Color.white);
+
+                        #endregion  
+                    }
+                }
+
+                filter.mesh = builder.Create();
+                empty.AddComponent<MeshCollider>().sharedMesh = filter.mesh;
+
+                builder.Clear();
+            }
+        }
+    }
+    #endregion
+    
+    #region Custom Methods
+    #endregion
+
+    //JUST FOR TESTING
+    /*
+    void OnGUI()
+    {
+        for(int i = 0; i < 64; i ++)
+        {
+            for(int j = 0; j < 16; j ++)
+            {
+                float x = i * VoxelEngine.HexagonHelper.SIZE_X;
+                float z = VoxelEngine.HexagonHelper.SIZE_Z * ((j) * 2 + i%2);
+
+                float vh = VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x,z));
+               
+
+
+                float off = 0.866025f * 2; //Used to retrieve adjascent level 
+
+                float[] h = {
+                    vh - VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x + Mathf.Sin(Mathf.PI/180 * 30) * off,z + Mathf.Cos(Mathf.PI/180 * 30) * off)),
+                    vh - VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x + Mathf.Sin(Mathf.PI/180 * 90) * off,z + Mathf.Cos(Mathf.PI/180 * 90) * off)),
+                    vh - VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x + Mathf.Sin(Mathf.PI/180 * 150) * off,z + Mathf.Cos(Mathf.PI/180 * 150) * off)),
+                    vh - VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x + Mathf.Sin(Mathf.PI/180 * 210) * off,z + Mathf.Cos(Mathf.PI/180 * 210) * off)),
+                    vh - VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x + Mathf.Sin(Mathf.PI/180 * 270) * off,z + Mathf.Cos(Mathf.PI/180 * 270) * off)),
+                    vh - VoxelEngine.HexagonHelper.GetPointAtPerlin(new Vector2(x + Mathf.Sin(Mathf.PI/180 * 330) * off,z + Mathf.Cos(Mathf.PI/180 * 330) * off))
+                };
+
+                
+                builder.AddStackedHexagon(x,0,z,vh,h,
+                    Color.Lerp(Color.red,Color.green,(i * (j * 4))/(80*80f)));       
+            }
+        }
+        //End
+        filter.mesh = builder.Create();
+        //empty.AddComponent<MeshCollider>().sharedMesh = filter.mesh;
+        builder.Clear();
+
+        VoxelEngine.HexagonHelper.off = GUI.HorizontalSlider(new Rect(25, 25, 500, 30), VoxelEngine.HexagonHelper.off * 16f, 0.0F, 10.0F) * 1/16f;
+        VoxelEngine.HexagonHelper.force = GUI.HorizontalSlider(new Rect(25, 85, 500, 0), VoxelEngine.HexagonHelper.force, 0.0F, 100.0F);
+
+    }
+    */
+}
