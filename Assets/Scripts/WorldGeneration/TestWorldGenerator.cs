@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using ProjetoAbelhas.WorldGeneration;
+using ProjetoAbelhas.WorldData;
 using Unity.Mathematics;
 
 /// <summary>
@@ -14,7 +14,6 @@ public class TestWorldGenerator : MonoBehaviour
     public static World world;
 
     public Material defaultMaterial;
-
     public GameObject cube_pivot;
     public GameObject cube_pivot_display;
 
@@ -29,8 +28,9 @@ public class TestWorldGenerator : MonoBehaviour
     {
         world = new World();
 
-        for(int i = 0; i < 64; i ++)
-            CreateChunkMesh(i/8,i%8);
+        for(int i = 0; i < world.chunksX; i ++)
+            for(int j = 0; j < world.chunksZ; j ++)
+                CreateChunkMesh(i,j);
 
         cube_pivot = GameObject.CreatePrimitive(PrimitiveType.Cube);
         cube_pivot_display = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -56,8 +56,12 @@ public class TestWorldGenerator : MonoBehaviour
     /// <param name="cz">ChunkPos Z</param>
     public void CreateChunkMesh(int cx,int cz)
     {
+        //Get units for generation
+        int x_size = WorldUtils.CHUNK_SIZE_X * 2;
+        int z_size = WorldUtils.CHUNK_SIZE_Z / 2;
+
         GameObject empty = new GameObject();
-        empty.transform.position = new Vector3(cx * WorldUtils.HEX_SIZE_X * WorldUtils.CHUNK_SIZE_X,0,cz * WorldUtils.HEX_SIZE_Z * WorldUtils.CHUNK_SIZE_Z * 2);
+        empty.transform.position = new Vector3(cx * WorldUtils.HEX_SIZE_X * x_size,0,cz * WorldUtils.HEX_SIZE_Z * z_size * 2);
         MeshFilter filter = empty.AddComponent<MeshFilter>();
         empty.AddComponent<MeshRenderer>().material = defaultMaterial;
 
@@ -73,14 +77,14 @@ public class TestWorldGenerator : MonoBehaviour
         //For now make this way, and after try to join adjascent waters to create one mesh per lake
         ProjetoAbelhas.WorldMeshBuilder water_builder = new ProjetoAbelhas.WorldMeshBuilder(8192,100,100);
 
-        for(int bx = 0; bx < WorldUtils.CHUNK_SIZE_X; bx++)
+        for(int bx = 0; bx < x_size; bx++)
         {
-            for(int bz = 0; bz < WorldUtils.CHUNK_SIZE_Z; bz ++)
+            for(int bz = 0; bz < z_size; bz ++)
             {
                 #region Current Hex
 
-                float x = cx * WorldUtils.HEX_SIZE_X * 16 + (bx * WorldUtils.HEX_SIZE_X);
-                float z = cz * WorldUtils.HEX_SIZE_Z * 4 * 2 + (WorldUtils.HEX_SIZE_Z * ((bz) * 2 + bx%2));
+                float x = cx * WorldUtils.HEX_SIZE_X * x_size + (bx * WorldUtils.HEX_SIZE_X);
+                float z = cz * WorldUtils.HEX_SIZE_Z * z_size * 2 + (WorldUtils.HEX_SIZE_Z * ((bz) * 2 + bx%2));
 
                 float ch = world.GetTerrainHeightAtPoint(x,z);
             
@@ -89,7 +93,7 @@ public class TestWorldGenerator : MonoBehaviour
                 //Check if ground is bellow water level
                 if(ch < world.waterLevel)
                 {
-                    int distance = world.GetFluidDistanceFromGround(x,z,world.waterLevel,4);
+                    int distance = world.GetFluidPointDistanceFromGround(x,z,world.waterLevel,4);
       
                     water_builder.AddFluidHexagon((bx * WorldUtils.HEX_SIZE_X),world.waterLevel,(WorldUtils.HEX_SIZE_Z * ((bz) * 2 + bx%2)),
                         WorldUtils.WATER_COLORS[distance - 1]);
@@ -108,7 +112,7 @@ public class TestWorldGenerator : MonoBehaviour
                         ch - world.GetTerrainHeightAtPoint(x + math.sin(math.PI/180 * 330) * WorldUtils.HEX_DISTANCE,z + math.cos(math.PI/180 * 330) * WorldUtils.HEX_DISTANCE)
                     };
                     terrain_builder.AddStackedHexagon((bx * WorldUtils.HEX_SIZE_X),0,(WorldUtils.HEX_SIZE_Z * ((bz) * 2 + bx%2)),ch,h,
-                        Color.Lerp(new Color(0,0.5f,0),Color.green,(ch-5)/8f),new Color(0.75f,0.4f,0f));
+                        Color.Lerp(new Color(0,0.1f,0),Color.green,(ch-5)/8f),new Color(0.75f,0.4f,0f));
                     #endregion 
                 }              
             }

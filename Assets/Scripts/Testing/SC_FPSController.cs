@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using ProjetoAbelhas.WorldData;
 
 [RequireComponent(typeof(CharacterController))]
 
@@ -16,6 +17,10 @@ public class SC_FPSController : MonoBehaviour
 
     public GameObject pointer;
 
+    public GameObject tree_prefab;
+
+    public GameObject[,] blocks_objects;
+
     CharacterController characterController;
     Vector3 moveDirection = Vector3.zero;
     float rotationX = 0;
@@ -25,9 +30,11 @@ public class SC_FPSController : MonoBehaviour
     [HideInInspector]
     public bool canMove = true;
 
+  
+
     void Start()
     {
-        //Cerate pointer
+        //Create pointer
         ProjetoAbelhas.WorldMeshBuilder builder = new ProjetoAbelhas.WorldMeshBuilder(16,10,10);
         builder.AddFluidHexagon(0,0,0,Color.red);
         pointer = new GameObject();
@@ -37,16 +44,34 @@ public class SC_FPSController : MonoBehaviour
         
         builder.Clear();
 
+        blocks_objects = new GameObject[256,256];
 
         characterController = GetComponent<CharacterController>();
 
         // Lock cursor
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+
+        
     }
+
+    bool init = false;
 
     void Update()
     {
+        if(!init && TestWorldGenerator.world != null)
+        {
+            for(int i = 0; i < 1600; i ++)
+            {
+                int x = UnityEngine.Random.Range(0,128);
+                int z = UnityEngine.Random.Range(0,128);
+                
+                if(TestWorldGenerator.world.CanWalkAboveTile(new TilePos(x,z),HexFace.LowerL,false))
+                    SwitchStatusOfBlock(new TilePos(x,z),WorldUtils.TilePosToHex(new TilePos(x,z)));
+            }
+            init = true;
+        }
         // We are grounded, so recalculate move direction based on axes
         Vector3 forward = transform.TransformDirection(Vector3.forward);
         Vector3 right = transform.TransformDirection(Vector3.right);
@@ -93,11 +118,40 @@ public class SC_FPSController : MonoBehaviour
         {
             Vector3 hit = hitPoint.point + hitPoint.normal/16f;
 
-            Vector2 pos = ProjetoAbelhas.WorldGeneration.WorldUtils.WorldPosToHex(hit.x,hit.z);
+            Vector2 pos = WorldUtils.WorldPosToHex(hit.x,hit.z);
 
             pointer.transform.position = new Vector3(pos.x,TestWorldGenerator.world.GetHeightAtPoint(pos.x,pos.y) + 0.025f,pos.y);
+
+            if(Input.GetMouseButtonDown(0))
+            {
+                NavigationTest.CURRENT_TEST.CalculatePathTo(pos);
+            }
+            else if(Input.GetMouseButtonDown(1))
+            {
+                SwitchStatusOfBlock(WorldUtils.HexPosToGrid(pos.x,pos.y),pos);
+            }
         }
         else
             pointer.transform.position = Vector3.zero;
+    }
+
+    public void SwitchStatusOfBlock(TilePos pos,Vector2 world)  
+    {
+        if(TestWorldGenerator.world.block_data[pos[0],pos[1]] == 0)
+        {
+            GameObject tree = GameObject.Instantiate(tree_prefab);
+            tree.transform.position = new Vector3(world.x,TestWorldGenerator.world.GetHeightAtPoint(world.x,world.y),world.y);
+            tree.transform.eulerAngles = new Vector3(-90f,UnityEngine.Random.Range(0,360),0);
+            tree.transform.localScale *= 3f;
+
+            TestWorldGenerator.world.block_data[pos[0],pos[1]] = 1;
+            blocks_objects[pos[0],pos[1]] = tree;
+        }
+        else
+        {
+
+            TestWorldGenerator.world.block_data[pos[0],pos[1]] = 0;
+            GameObject.Destroy(blocks_objects[pos[0],pos[1]]);
+        }
     }
 }

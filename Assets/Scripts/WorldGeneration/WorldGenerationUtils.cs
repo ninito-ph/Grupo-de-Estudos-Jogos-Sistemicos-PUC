@@ -65,6 +65,13 @@ namespace ProjetoAbelhas
             Clear(4096);
         }
 
+        /// <summary>
+        /// Creates a default hexagon without lateral faces. Non-Obsolete. No known problems.
+        /// </summary>
+        /// <param name="x">Pos X</param>
+        /// <param name="y">Pos Y</param>
+        /// <param name="z">Pos Z</param>
+        /// <param name="color">Color</param>
         public void AddFluidHexagon(float x,float y,float z,Color color)
         {
             vertices[vertices_count] = new Vector3(x + 0.866025f,y,z + 0.5f);
