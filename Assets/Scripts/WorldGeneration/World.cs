@@ -44,7 +44,7 @@ namespace ProjetoAbelhas
 
 
         /// <summary>
-        /// Used as util for convertions and to store constants. Non-Obsolete. No known problems.
+        /// Used as util for conversions and to store constants. Non-Obsolete. No known problems.
         /// </summary>
         public class WorldUtils
         {

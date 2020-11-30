@@ -29,7 +29,7 @@ namespace ProjetoAbelhas
             }
 
             /// <summary>
-            /// Find a path in world from point A to B supporint coroutines. Non-Obsolete. No known problems.
+            /// Find a path in world from point A to B supporting coroutines. Non-Obsolete. No known problems.
             /// </summary>
             /// <param name="world">Current world</param>
             /// <param name="A">Start tile</param>
